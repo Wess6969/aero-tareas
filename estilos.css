@@ -1,0 +1,426 @@
+/* Aero Tareas (celular) — Frutiger Aero nocturno con la paleta del escritorio de Antho. */
+
+:root {
+  --abismo: #021220;
+  --cian: #2fe6ff;
+  --lima: #a6ff3a;
+  --oro: #ffd84a;
+  --coral: #ff7a7a;
+  --texto: #ecf9ff;
+  --texto-2: #b0dcf2;
+  --texto-3: #86bcdb;
+  --fuente: "Segoe UI Variable Text", "Segoe UI", -apple-system, system-ui, Roboto, sans-serif;
+  --fuente-titulo: "Segoe UI Variable Display", "Segoe UI Light", -apple-system, system-ui, Roboto, sans-serif;
+  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --curva-jalea: cubic-bezier(0.34, 1.45, 0.5, 1);
+  --alto-compositor: 72px;
+  --abajo: env(safe-area-inset-bottom, 0px);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+/* Base móvil: sin destello al tocar, sin inflar letras, sin "jalar para recargar" */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  font-family: var(--fuente);
+  font-size: 16px;
+  color: var(--texto);
+  background-color: var(--abismo);
+  -webkit-font-smoothing: antialiased;
+  caret-color: var(--lima);
+}
+::selection { background: rgba(166, 255, 58, 0.38); color: #fff; }
+:focus-visible { outline: 2px solid var(--cian); outline-offset: 3px; }
+button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input { font: inherit; font-size: 16px; }   /* 16 px: así iPhone no hace zoom al escribir */
+.numero { font-variant-numeric: tabular-nums; }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ------------------------------------------------------------ ambiente (capa fija detrás) */
+.ambiente {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  background-image:
+    radial-gradient(80% 40% at 15% -5%, rgba(31, 123, 255, 0.55), transparent 70%),
+    radial-gradient(60% 30% at 95% 8%, rgba(166, 255, 58, 0.18), transparent 70%),
+    radial-gradient(90% 45% at 80% 105%, rgba(47, 230, 255, 0.28), transparent 70%),
+    linear-gradient(180deg, #06294a 0%, #031a2e 55%, #021220 100%);
+}
+.techo { position: absolute; top: -38px; left: 0; width: 100%; height: 96px; opacity: 0.7; }
+.isla { fill: #041f38; stroke-width: 2; }
+.neon-lima { stroke: #b6ff4d; filter: drop-shadow(0 0 4px rgba(166, 255, 58, 0.95)) drop-shadow(0 0 12px rgba(166, 255, 58, 0.45)); }
+.neon-azul { stroke: #4b96ff; filter: drop-shadow(0 0 4px rgba(75, 150, 255, 0.95)) drop-shadow(0 0 14px rgba(75, 150, 255, 0.5)); }
+.isla-chica { opacity: 0.75; }
+
+.burbuja-amb {
+  position: absolute; bottom: -60px; left: var(--x); width: var(--tam); height: var(--tam);
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0 4%, rgba(255, 255, 255, 0.35) 9%,
+    rgba(160, 230, 255, 0.16) 30%, rgba(100, 190, 255, 0.12) 58%, rgba(170, 235, 255, 0.45) 86%, rgba(230, 250, 255, 0.75) 100%);
+  box-shadow: 0 0 12px rgba(47, 230, 255, 0.22), inset 0 -5px 9px rgba(166, 255, 58, 0.2);
+  opacity: var(--opacidad, 0.6);
+  animation: subir var(--dur) linear var(--retraso) infinite;
+}
+@keyframes subir {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(var(--deriva), -60dvh, 0); }
+  100% { transform: translate3d(0, -125dvh, 0); }
+}
+
+/* ------------------------------------------------------------ estructura */
+.app {
+  position: relative; z-index: 1;
+  max-width: 640px; margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(var(--alto-compositor) + var(--abajo) + 28px);
+}
+
+.cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.logo { flex: none; width: 40px; height: 40px; filter: drop-shadow(0 4px 10px rgba(31, 123, 255, 0.6)) drop-shadow(0 0 14px rgba(166, 255, 58, 0.25)); }
+.titulos { flex: 1; min-width: 0; }
+h1 {
+  margin: 0; white-space: nowrap;
+  font: 300 1.65rem/1.05 var(--fuente-titulo);
+  color: #f4fcff;
+  text-shadow: 0 0 18px rgba(47, 230, 255, 0.55), 0 2px 0 rgba(0, 20, 40, 0.6);
+}
+.fecha { margin: 3px 0 0; color: var(--texto-2); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.banner-instalar {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 16px; padding: 10px 10px 10px 12px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(166, 255, 58, 0.12), rgba(166, 255, 58, 0.04));
+  border: 1px solid rgba(166, 255, 58, 0.4);
+}
+.banner-instalar img { flex: none; border-radius: 11px; }
+.banner-instalar p { flex: 1; min-width: 0; margin: 0; display: grid; gap: 2px; line-height: 1.25; }
+.banner-instalar span { color: var(--texto-2); font-size: 0.84rem; }
+
+.redondo {
+  flex: none; width: 44px; height: 44px; padding: 0;
+  display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid rgba(170, 230, 255, 0.35); cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04) 50%, rgba(47, 230, 255, 0.1));
+  transition: transform 0.12s var(--curva), background 0.15s;
+}
+.redondo svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.redondo:active { transform: scale(0.94); background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08) 50%, rgba(47, 230, 255, 0.2)); }
+
+.chip-instalar {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 18px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(225, 255, 175, 0.8);
+  color: #0b2a04; font-weight: 650; font-size: 0.9rem;
+  background: linear-gradient(180deg, #d4ff8f 0%, #8ee93a 47%, #4dbb18 53%, #86ea47 100%);
+  box-shadow: 0 6px 16px -8px rgba(166, 255, 58, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.12s var(--curva);
+}
+.chip-instalar svg { width: 18px; height: 18px; stroke-width: 2.4; }
+.chip-instalar:active { transform: scale(0.95); }
+
+.aviso-almacen {
+  margin: 0 0 14px; padding: 12px 14px; border-radius: 16px;
+  background: rgba(255, 165, 58, 0.14); border: 1px solid rgba(255, 165, 58, 0.55);
+  color: #ffd9a8; font-size: 0.92rem; line-height: 1.4;
+}
+
+/* ------------------------------------------------------------ progreso y filtros */
+.resumen { display: grid; gap: 8px; margin-bottom: 14px; }
+.tubo {
+  position: relative; height: 18px; overflow: hidden; border-radius: 999px;
+  border: 1px solid rgba(170, 230, 255, 0.32);
+  background: linear-gradient(180deg, rgba(0, 14, 28, 0.75), rgba(8, 38, 66, 0.6));
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6);
+}
+.tubo::after { content: ""; position: absolute; left: 6px; right: 6px; top: 2px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); }
+.liquido {
+  --p: 0;
+  position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 1%); overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1f7bff, #2fe6ff 55%, #a6ff3a);
+  box-shadow: 0 0 14px rgba(47, 230, 255, 0.55);
+  transition: width 0.8s var(--curva);
+}
+.liquido::before {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.2) 0 10px, transparent 10px 26px);
+  animation: corriente 2.6s linear infinite;
+}
+@keyframes corriente { to { transform: translateX(28px); } }
+.progreso-texto { margin: 0 0 4px; display: flex; justify-content: space-between; color: var(--texto-2); font-size: 0.88rem; }
+
+.filtros {
+  position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
+  padding: 4px; border-radius: 999px;
+  background: rgba(0, 18, 36, 0.5); border: 1px solid rgba(170, 230, 255, 0.22);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.45);
+}
+.filtro {
+  position: relative; z-index: 1; min-height: 40px;
+  border: 0; background: none; cursor: pointer; border-radius: 999px;
+  color: var(--texto-2); font-weight: 600; font-size: 0.9rem;
+  transition: color 0.25s;
+}
+.filtro[aria-pressed="true"] { color: #032036; }
+.cuenta { margin-left: 3px; opacity: 0.8; font-weight: 500; }
+.filtro-marca {
+  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0;
+  width: var(--w, 0px); transform: translateX(var(--x, 0px));
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f0fcff 0%, #92e3ff 48%, #45bdf2 53%, #9becff 100%);
+  box-shadow: 0 4px 12px -4px rgba(47, 230, 255, 0.85), inset 0 1px 0 #fff;
+  transition: transform 0.38s var(--curva-jalea), width 0.38s var(--curva);
+}
+
+/* ------------------------------------------------------------ tareas */
+.tareas { list-style: none; margin: 0; padding: 0; }
+.tarea {
+  position: relative;
+  display: grid; grid-template-columns: 30px 44px minmax(0, 1fr) auto; align-items: center; column-gap: 6px;
+  min-height: 60px; margin-bottom: 8px; padding: 6px 12px 6px 4px;
+  border-radius: 18px;
+  border: 1px solid rgba(170, 230, 255, 0.16);
+  background: linear-gradient(180deg, rgba(160, 220, 255, 0.12), rgba(120, 190, 255, 0.05));
+  box-shadow: 0 8px 16px -12px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  scroll-margin-bottom: calc(var(--alto-compositor) + var(--abajo) + 24px);
+  transition: background 0.25s, border-color 0.25s;
+}
+.tarea.importante { border-color: rgba(255, 216, 74, 0.45); }
+.tarea.editando { border-color: rgba(47, 230, 255, 0.6); background: linear-gradient(180deg, rgba(90, 170, 255, 0.2), rgba(40, 110, 200, 0.12)); row-gap: 8px; padding-bottom: 10px; }
+.tareas.ordenando .tarea:not(.arrastrando) { transition: transform 0.22s var(--curva); }
+.tarea.arrastrando {
+  z-index: 5;
+  background: linear-gradient(180deg, rgba(90, 170, 255, 0.36), rgba(40, 110, 200, 0.3));
+  border-color: rgba(47, 230, 255, 0.75);
+  box-shadow: 0 20px 34px -12px rgba(0, 0, 0, 0.85), 0 0 22px rgba(47, 230, 255, 0.35);
+  transition: none;
+}
+
+.asa {
+  display: grid; place-items: center; width: 30px; height: 48px;
+  color: rgba(170, 220, 245, 0.55); cursor: grab;
+  touch-action: none;                    /* el asa maneja el arrastre; el resto de la fila deja hacer scroll */
+  -webkit-user-select: none; user-select: none;
+}
+.asa svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+
+/* Burbuja: 44 px para el dedo, 32 px de vidrio visible */
+.celda-marca { position: relative; width: 44px; height: 44px; display: grid; place-items: center; }
+.marcar {
+  width: 44px; height: 44px; padding: 6px; border: 0; background: none; cursor: pointer;
+  display: grid; place-items: center;
+}
+.burbuja {
+  position: relative; overflow: hidden; display: block;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid rgba(190, 240, 255, 0.62);
+  background:
+    radial-gradient(circle at 50% 118%, rgba(47, 230, 255, 0.35), transparent 60%),
+    radial-gradient(circle at 50% 42%, rgba(10, 40, 70, 0.4), rgba(0, 14, 28, 0.65));
+  box-shadow: inset 0 -3px 6px rgba(47, 140, 255, 0.35), inset 0 2px 3px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 10, 25, 0.6);
+  transition: transform 0.2s var(--curva-jalea), box-shadow 0.35s, border-color 0.35s;
+}
+.marcar:active .burbuja { transform: scale(0.9); }
+.agua {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: linear-gradient(180deg, #e2ff9e 0%, #a6ff3a 42%, #46b414 100%);
+  transform: translateY(104%);
+  transition: transform 0.55s var(--curva);
+}
+.agua::before { content: ""; position: absolute; left: -35%; right: -35%; top: -5px; height: 12px; border-radius: 50%; background: #d2ff8c; opacity: 0.9; }
+.burbuja svg {
+  position: absolute; inset: 5px; width: 20px; height: 20px;
+  stroke: #0b3802; stroke-width: 3;
+  stroke-dasharray: 22; stroke-dashoffset: 22;
+  transition: stroke-dashoffset 0.3s var(--curva) 0.22s;
+}
+.reflejo { position: absolute; left: 17%; top: 7%; width: 48%; height: 36%; border-radius: 50%; background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0)); }
+.tarea.hecha .agua { transform: translateY(0); }
+.tarea.hecha .burbuja svg { stroke-dashoffset: 0; }
+.tarea.hecha .burbuja { border-color: rgba(225, 255, 175, 0.95); box-shadow: 0 0 16px rgba(166, 255, 58, 0.55), inset 0 -3px 6px rgba(30, 100, 0, 0.4); }
+.gotita { position: absolute; left: 19px; top: 19px; width: 6px; height: 6px; border-radius: 50%; background: #c9ff7a; box-shadow: 0 0 6px rgba(166, 255, 58, 0.9); pointer-events: none; }
+.onda-marca { position: absolute; left: 6px; top: 6px; width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(166, 255, 58, 0.85); pointer-events: none; }
+
+/* El texto es un botón: tocarlo abre la edición */
+.texto {
+  min-width: 0; min-height: 44px; padding: 8px 2px;
+  border: 0; background: none; cursor: text; text-align: left;
+  font-size: 1rem; line-height: 1.38; overflow-wrap: anywhere;
+  border-radius: 10px;
+}
+.texto:active { background: rgba(170, 230, 255, 0.08); }
+.texto > span {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat; background-position: 0 58%; background-size: 0% 1.5px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  transition: color 0.4s, background-size 0.5s var(--curva);
+}
+.tarea.hecha .texto > span { color: var(--texto-3); background-size: 100% 1.5px; }
+.marca-importante { width: 18px; height: 18px; color: var(--oro); }
+.marca-importante svg { width: 18px; height: 18px; fill: currentColor; filter: drop-shadow(0 0 5px rgba(255, 216, 74, 0.7)); }
+
+/* Modo edición */
+.editor { height: 44px; padding: 0 14px; width: 100%; min-width: 0; grid-column: 3 / -1; }
+.barra-edicion { grid-column: 2 / -1; display: flex; gap: 8px; }
+.boton-edicion {
+  flex: 1; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 999px; border: 1px solid rgba(170, 230, 255, 0.35); cursor: pointer;
+  background: rgba(0, 18, 36, 0.5); color: var(--texto); font-weight: 600; font-size: 0.9rem;
+  transition: transform 0.12s var(--curva), background 0.15s;
+}
+.boton-edicion svg { width: 18px; height: 18px; }
+.boton-edicion:active { transform: scale(0.96); }
+.boton-edicion[aria-pressed="true"] { color: var(--oro); border-color: rgba(255, 216, 74, 0.6); }
+.boton-edicion[aria-pressed="true"] svg { fill: currentColor; }
+.boton-edicion.peligro { color: #ffb3b3; border-color: rgba(255, 122, 122, 0.45); }
+.boton-edicion.principal {
+  color: #0b2a04; border-color: rgba(225, 255, 175, 0.85);
+  background: linear-gradient(180deg, #d4ff8f 0%, #8ee93a 47%, #4dbb18 53%, #86ea47 100%);
+}
+
+.campo {
+  height: 48px; padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(170, 230, 255, 0.36);
+  background: linear-gradient(180deg, rgba(0, 18, 36, 0.66), rgba(8, 42, 72, 0.55));
+  color: var(--texto);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: border-color 0.2s, box-shadow 0.25s;
+  -webkit-appearance: none; appearance: none;
+}
+.campo::placeholder { color: #93c4e0; }
+.campo:focus { outline: none; border-color: rgba(47, 230, 255, 0.85); box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(47, 230, 255, 0.22), 0 0 22px rgba(47, 230, 255, 0.3); }
+.campo[aria-invalid="true"] { border-color: rgba(255, 165, 58, 0.9); }
+.sacude { animation: sacudir 0.4s var(--curva); }
+@keyframes sacudir { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } 100% { transform: translateX(0); } }
+
+/* Lista vacía */
+.vacio { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 36px 16px; }
+.vacio-dibujo { width: 130px; height: 98px; margin-bottom: 6px; }
+.vacio-dibujo circle { stroke: rgba(190, 240, 255, 0.6); stroke-width: 1.4; }
+.vacio-dibujo .b1 { fill: rgba(47, 230, 255, 0.1); }
+.vacio-dibujo .b2 { fill: rgba(166, 255, 58, 0.1); }
+.vacio-dibujo .b3 { fill: rgba(31, 123, 255, 0.16); }
+.vacio-dibujo .r { fill: rgba(255, 255, 255, 0.5); stroke: none; }
+.vacio-titulo { margin: 0; font-size: 1.15rem; font-weight: 600; }
+.vacio-texto { margin: 0; color: var(--texto-2); max-width: 32ch; line-height: 1.4; }
+
+.pie-lista { display: flex; justify-content: center; padding-top: 4px; }
+.boton-texto {
+  min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  color: var(--texto-2); font-size: 0.92rem; font-weight: 600;
+}
+.boton-texto:active { background: rgba(170, 230, 255, 0.12); }
+
+/* ------------------------------------------------------------ barra para añadir (abajo, al alcance del pulgar) */
+.compositor {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  padding: 10px 12px calc(10px + var(--abajo));
+  background: linear-gradient(180deg, rgba(10, 46, 82, 0.72), rgba(3, 22, 40, 0.92));
+  border-top: 1px solid rgba(170, 230, 255, 0.25);
+  box-shadow: 0 -12px 30px -12px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+.compositor form { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; }
+.compositor .campo { flex: 1; min-width: 0; }
+.aviso-error { max-width: 640px; margin: 0 auto 8px; padding: 0 8px; color: #ffc27a; font-size: 0.88rem; }
+.aviso-error:empty { display: none; }
+
+.jalea {
+  position: relative; overflow: hidden; flex: none;
+  width: 48px; height: 48px; padding: 0; display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(225, 255, 175, 0.85);
+  color: #0b2a04; cursor: pointer;
+  background: linear-gradient(180deg, #d4ff8f 0%, #8ee93a 47%, #4dbb18 53%, #86ea47 100%);
+  box-shadow: 0 8px 20px -8px rgba(166, 255, 58, 0.8), 0 2px 4px rgba(0, 30, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 -4px 9px rgba(30, 100, 0, 0.35);
+  transition: transform 0.12s var(--curva), filter 0.15s;
+}
+.jalea::after { content: ""; position: absolute; left: 14%; right: 14%; top: 2px; height: 44%; border-radius: 999px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.06)); }
+.jalea svg { width: 24px; height: 24px; stroke-width: 2.8; }
+.jalea:active { transform: scale(0.92); filter: brightness(0.95); }
+
+/* ------------------------------------------------------------ aviso de deshacer */
+.toast {
+  position: fixed; z-index: 30; left: 50%;
+  bottom: calc(var(--alto-compositor) + var(--abajo) + 14px);
+  width: max-content; max-width: calc(100vw - 24px);
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 8px 8px 18px; border-radius: 999px;
+  border: 1px solid rgba(170, 230, 255, 0.4);
+  background: linear-gradient(180deg, rgba(40, 100, 160, 0.95), rgba(8, 40, 72, 0.97));
+  box-shadow: 0 18px 36px -12px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-size: 0.92rem;
+  transform: translate(-50%, 30px); opacity: 0;
+  transition: transform 0.4s var(--curva-jalea), opacity 0.25s;
+}
+.toast.visible { transform: translate(-50%, 0); opacity: 1; }
+.toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast button {
+  flex: none; min-height: 38px; border: 0; cursor: pointer; border-radius: 999px; padding: 0 16px;
+  font-weight: 650; color: #0b2a04;
+  background: linear-gradient(180deg, #d4ff8f 0%, #8ee93a 47%, #4dbb18 53%, #86ea47 100%);
+}
+
+/* ------------------------------------------------------------ hoja de opciones (sube desde abajo) */
+.hoja {
+  margin: auto auto 0; padding: 0;
+  width: 100%; max-width: 640px; max-height: 88dvh;
+  border: 1px solid rgba(170, 230, 255, 0.3); border-bottom: 0;
+  border-radius: 26px 26px 0 0;
+  color: var(--texto);
+  background: linear-gradient(180deg, rgba(30, 90, 150, 0.97), rgba(5, 30, 54, 0.99));
+  box-shadow: 0 -20px 50px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  overscroll-behavior: contain;
+}
+.hoja::backdrop { background: rgba(0, 8, 20, 0.6); }
+.hoja-contenido { display: grid; gap: 8px; padding: 10px 16px calc(18px + var(--abajo)); }
+.hoja-asa { justify-self: center; width: 42px; height: 5px; border-radius: 999px; background: rgba(200, 235, 255, 0.45); margin-bottom: 4px; }
+.hoja h2 { margin: 0 0 4px; font-size: 1.15rem; font-weight: 600; }
+.opcion {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px;
+  padding: 10px 14px; border-radius: 18px; cursor: pointer; text-align: left;
+  border: 1px solid rgba(170, 230, 255, 0.18); background: rgba(255, 255, 255, 0.06);
+  transition: background 0.15s, transform 0.12s var(--curva);
+}
+.opcion:active { background: rgba(170, 230, 255, 0.16); transform: scale(0.985); }
+.opcion > svg { flex: none; width: 24px; height: 24px; color: var(--cian); }
+.opcion span { display: grid; gap: 2px; }
+.opcion strong { font-weight: 600; }
+.opcion small { color: var(--texto-2); font-size: 0.84rem; }
+.nota { margin: 6px 4px; color: var(--texto-2); font-size: 0.86rem; line-height: 1.4; }
+.nota-ios { padding: 10px 12px; border-radius: 14px; background: rgba(47, 230, 255, 0.1); border: 1px solid rgba(47, 230, 255, 0.35); color: var(--texto); }
+.boton-vidrio {
+  min-height: 48px; margin-top: 4px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(170, 230, 255, 0.4);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 48%, rgba(47, 230, 255, 0.08) 52%, rgba(47, 230, 255, 0.2) 100%);
+  font-weight: 600;
+}
+.boton-vidrio:active { transform: scale(0.98); }
+
+/* Solo con ratón (por ejemplo, si la abres en el PC): hover real, nunca "pegado" en el táctil */
+@media (hover: hover) and (pointer: fine) {
+  .tarea:hover { border-color: rgba(170, 230, 255, 0.32); }
+  .redondo:hover, .opcion:hover { background-color: rgba(170, 230, 255, 0.12); }
+  .marcar:hover .burbuja { transform: scale(1.08); box-shadow: inset 0 -3px 6px rgba(47, 140, 255, 0.35), 0 0 14px rgba(47, 230, 255, 0.5); }
+  .jalea:hover, .chip-instalar:hover { filter: brightness(1.06) saturate(1.1); }
+  .filtro:hover { color: #fff; }
+  .filtro[aria-pressed="true"]:hover { color: #032036; }
+  .asa:hover { color: #dff6ff; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .burbuja-amb { display: none; }
+}

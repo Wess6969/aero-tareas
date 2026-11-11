@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; style-src 'self'; script-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+  <title>Aero Tareas</title>
+  <meta name="description" content="Tu checklist con estilo Frutiger Aero. Guarda las tareas en tu teléfono y funciona sin internet.">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#05284a">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#05284a">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Aero Tareas">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+  <link rel="stylesheet" href="estilos.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></symbol>
+    <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-estrella" viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.8.85-4.2 4.1 1 5.8L12 16.9l-5.2 2.75 1-5.8-4.2-4.1 5.8-.85z"/></symbol>
+    <symbol id="i-papelera" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.6h5V7M6.6 7l.9 12.4h9l.9-12.4M10.2 10.8v5.4M13.8 10.8v5.4"/></symbol>
+    <symbol id="i-asa" viewBox="0 0 24 24"><circle cx="9" cy="6.5" r="1.5"/><circle cx="15" cy="6.5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="17.5" r="1.5"/><circle cx="15" cy="17.5" r="1.5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></symbol>
+    <symbol id="i-instalar" viewBox="0 0 24 24"><path d="M8.2 2.8h7.6a1.7 1.7 0 0 1 1.7 1.7v15a1.7 1.7 0 0 1-1.7 1.7H8.2a1.7 1.7 0 0 1-1.7-1.7v-15a1.7 1.7 0 0 1 1.7-1.7zM12 8.6v6M9 11.6h6"/></symbol>
+    <symbol id="i-guardar" viewBox="0 0 24 24"><path d="M12 15V4.5M7.5 9L12 4.5 16.5 9M5 14.5v4.5h14v-4.5"/></symbol>
+    <symbol id="i-recuperar" viewBox="0 0 24 24"><path d="M12 4.5V15M7.5 10.5L12 15l4.5-4.5M5 14.5v4.5h14v-4.5"/></symbol>
+    <symbol id="i-limpiar" viewBox="0 0 24 24"><path d="M4.5 12.5l3.5 3.5 6.5-7.5M12.5 15.5l1.5 1.5 6.5-7.5"/></symbol>
+  </svg>
+
+  <div class="ambiente" aria-hidden="true">
+    <svg class="techo" viewBox="0 0 400 120" preserveAspectRatio="xMidYMin slice">
+      <path class="isla neon-azul" d="M-20 4c30-16 110-18 146-3 22 9 52 2 72 9 30 10 18 38-14 42-44 6-80-4-124 2-44 6-96 0-104-22-4-13 4-22 24-28z"/>
+      <path class="isla neon-lima" d="M232-2c36-14 116-13 142 3 16 10 48 4 64 16 18 14-4 36-40 38-44 2-70-9-110-4-44 4-80-4-78-26 1-12 8-20 22-27z"/>
+    </svg>
+    <div class="burbujas" id="burbujas"></div>
+  </div>
+
+  <div class="app">
+    <header class="cabecera">
+      <img class="logo" src="iconos/icono.svg" alt="" width="40" height="40">
+      <div class="titulos">
+        <h1>Aero Tareas</h1>
+        <p class="fecha" id="fecha"></p>
+      </div>
+      <button type="button" class="redondo" id="boton-menu" aria-label="Opciones" aria-haspopup="dialog">
+        <svg aria-hidden="true"><use href="#i-menu"/></svg>
+      </button>
+    </header>
+
+    <div class="banner-instalar" id="banner-instalar" hidden>
+      <img src="iconos/icono-192.png" alt="" width="44" height="44">
+      <p><strong>Instálala como app</strong><span>Ícono en tu inicio y funciona sin internet</span></p>
+      <button type="button" class="chip-instalar" id="chip-instalar">Instalar</button>
+    </div>
+
+    <p class="aviso-almacen" id="aviso-almacen" role="alert" hidden>
+      Este navegador no deja guardar datos (¿modo incógnito?). Tus tareas se perderán al cerrar. Abre la app en una ventana normal.
+    </p>
+
+    <section class="resumen" aria-label="Progreso">
+      <div class="tubo" id="tubo" role="progressbar" aria-label="Tareas hechas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="liquido" id="liquido"></div>
+      </div>
+      <p class="progreso-texto"><span id="progreso-cuenta">Sin tareas todavía</span><span id="progreso-pct" class="numero">0%</span></p>
+
+      <div class="filtros" id="filtros" role="group" aria-label="Mostrar tareas">
+        <span class="filtro-marca" id="filtro-marca" aria-hidden="true"></span>
+        <button type="button" class="filtro" data-filtro="todas" aria-pressed="true">Todas <span class="cuenta numero" data-cuenta="todas">0</span></button>
+        <button type="button" class="filtro" data-filtro="pendientes" aria-pressed="false">Pendientes <span class="cuenta numero" data-cuenta="pendientes">0</span></button>
+        <button type="button" class="filtro" data-filtro="hechas" aria-pressed="false">Hechas <span class="cuenta numero" data-cuenta="hechas">0</span></button>
+      </div>
+    </section>
+
+    <main>
+      <h2 class="sr-only">Tus tareas</h2>
+      <ul class="tareas" id="tareas" aria-label="Lista de tareas"></ul>
+
+      <div class="vacio" id="vacio" hidden>
+        <svg class="vacio-dibujo" viewBox="0 0 120 90" aria-hidden="true">
+          <circle cx="44" cy="52" r="26" class="b1"/>
+          <circle cx="84" cy="34" r="16" class="b2"/>
+          <circle cx="92" cy="70" r="9" class="b3"/>
+          <ellipse cx="36" cy="42" rx="7" ry="10" class="r" transform="rotate(30 36 42)"/>
+          <ellipse cx="79" cy="28" rx="4" ry="6" class="r" transform="rotate(30 79 28)"/>
+        </svg>
+        <p class="vacio-titulo" id="vacio-titulo"></p>
+        <p class="vacio-texto" id="vacio-texto"></p>
+      </div>
+
+      <div class="pie-lista">
+        <button type="button" class="boton-texto" id="limpiar" hidden>Quitar hechas</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="compositor">
+    <p id="error-nueva" class="aviso-error" role="alert"></p>
+    <form id="form-nueva" autocomplete="off" novalidate>
+      <label for="texto-nueva" class="sr-only">Nueva tarea</label>
+      <input id="texto-nueva" class="campo" type="text" maxlength="200" placeholder="¿Qué tienes que hacer?"
+        enterkeyhint="send" autocapitalize="sentences" aria-describedby="error-nueva">
+      <button type="submit" class="jalea" aria-label="Añadir tarea">
+        <svg aria-hidden="true"><use href="#i-mas"/></svg>
+      </button>
+    </form>
+  </div>
+
+  <div class="toast" id="toast" role="status" hidden>
+    <span id="toast-texto"></span>
+    <button type="button" id="toast-deshacer">Deshacer</button>
+  </div>
+
+  <dialog class="hoja" id="menu" aria-labelledby="titulo-menu">
+    <div class="hoja-contenido">
+      <span class="hoja-asa" aria-hidden="true"></span>
+      <h2 id="titulo-menu">Opciones</h2>
+      <button type="button" class="opcion" id="op-instalar" hidden>
+        <svg aria-hidden="true"><use href="#i-instalar"/></svg>
+        <span><strong>Instalar Aero Tareas</strong><small>Ícono en tu pantalla de inicio y abre sin el navegador</small></span>
+      </button>
+      <p class="nota nota-ios" id="nota-ios" hidden>Para instalarla en iPhone: toca <strong>Compartir</strong> y luego <strong>«Agregar a pantalla de inicio»</strong>.</p>
+      <button type="button" class="opcion" id="op-exportar">
+        <svg aria-hidden="true"><use href="#i-guardar"/></svg>
+        <span><strong>Guardar copia de seguridad</strong><small>Un archivo con todas tus tareas</small></span>
+      </button>
+      <button type="button" class="opcion" id="op-importar">
+        <svg aria-hidden="true"><use href="#i-recuperar"/></svg>
+        <span><strong>Recuperar desde una copia</strong><small>Añade las tareas de un archivo de copia</small></span>
+      </button>
+      <input type="file" id="archivo-importar" accept="application/json,.json" hidden>
+      <button type="button" class="opcion" id="op-limpiar">
+        <svg aria-hidden="true"><use href="#i-limpiar"/></svg>
+        <span><strong>Quitar tareas hechas</strong><small>Puedes deshacerlo justo después</small></span>
+      </button>
+      <p class="nota">Tus tareas se guardan solo en este dispositivo. Haz una copia de vez en cuando.</p>
+      <button type="button" class="boton-vidrio" id="cerrar-menu">Cerrar</button>
+    </div>
+  </dialog>
+
+  <p class="sr-only" id="anuncio" aria-live="polite"></p>
+</body>
+</html>
