@@ -33,6 +33,143 @@ function guardarPreferencia(clave, valor) {
   try { localStorage.setItem('aeroTareas.' + clave, JSON.stringify(valor)); } catch { /* sin almacenamiento */ }
 }
 
+/* ============================== 1b. Sonidos de agua (sintetizados, sin archivos) ============================== */
+const Sonido = (() => {
+  let contexto = null;
+  let salida = null;
+  let activo = leerPreferencia('sonido', true) !== false;
+
+  // Se crea al primer toque: los teléfonos solo dejan sonar audio después de que el usuario toca algo.
+  function preparar() {
+    if (!contexto) {
+      const Contexto = window.AudioContext || window.webkitAudioContext;
+      if (!Contexto) return null;
+      // iPhone: respeta el botón de silencio y no corta la música que estés escuchando.
+      try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch { /* no disponible */ }
+      contexto = new Contexto();
+      salida = contexto.createGain();
+      salida.gain.value = 0.8;
+      // Eco suave, como dentro de una cueva con agua
+      const retardo = contexto.createDelay(1);
+      retardo.delayTime.value = 0.11;
+      const realimentacion = contexto.createGain();
+      realimentacion.gain.value = 0.25;
+      const filtro = contexto.createBiquadFilter();
+      filtro.type = 'lowpass';
+      filtro.frequency.value = 2400;
+      const mezcla = contexto.createGain();
+      mezcla.gain.value = 0.28;
+      salida.connect(contexto.destination);
+      salida.connect(retardo);
+      retardo.connect(filtro);
+      filtro.connect(realimentacion);
+      realimentacion.connect(retardo);
+      filtro.connect(mezcla);
+      mezcla.connect(contexto.destination);
+    }
+    if (contexto.state === 'suspended') contexto.resume().catch(() => {});
+    return contexto;
+  }
+
+  // Burbuja: un tono puro que cambia de altura rápido (sube = burbuja que sale, baja = burbuja que se hunde).
+  function burbuja(t, desde, hasta, duracion, fuerza) {
+    const oscilador = contexto.createOscillator();
+    const volumen = contexto.createGain();
+    oscilador.type = 'sine';
+    oscilador.frequency.setValueAtTime(desde, t);
+    oscilador.frequency.exponentialRampToValueAtTime(hasta, t + duracion * 0.4);
+    volumen.gain.setValueAtTime(0.0001, t);
+    volumen.gain.exponentialRampToValueAtTime(fuerza, t + 0.008);
+    volumen.gain.exponentialRampToValueAtTime(0.0001, t + duracion);
+    oscilador.connect(volumen).connect(salida);
+    oscilador.start(t);
+    oscilador.stop(t + duracion + 0.02);
+  }
+
+  // Campanita de cristal: un tono con armónicos "de campana" (no múltiplos exactos) que se apagan solos.
+  function campanita(t, frecuencia, fuerza, duracion) {
+    for (const [multiplo, amplitud] of [[1, 1], [2.76, 0.35], [5.4, 0.12]]) {
+      const oscilador = contexto.createOscillator();
+      const volumen = contexto.createGain();
+      oscilador.type = 'sine';
+      oscilador.frequency.value = frecuencia * multiplo;
+      volumen.gain.setValueAtTime(0.0001, t);
+      volumen.gain.exponentialRampToValueAtTime(fuerza * amplitud, t + 0.004);
+      volumen.gain.exponentialRampToValueAtTime(0.0001, t + duracion / Math.sqrt(multiplo));
+      oscilador.connect(volumen).connect(salida);
+      oscilador.start(t);
+      oscilador.stop(t + duracion + 0.05);
+    }
+  }
+
+  // Soplido: ruido filtrado que barre de agudo a grave (agua que se va).
+  function soplido(t, duracion, desde, hasta, fuerza) {
+    const largo = Math.floor(contexto.sampleRate * duracion);
+    const buffer = contexto.createBuffer(1, largo, contexto.sampleRate);
+    const datos = buffer.getChannelData(0);
+    for (let i = 0; i < largo; i++) datos[i] = Math.random() * 2 - 1;
+    const ruido = contexto.createBufferSource();
+    ruido.buffer = buffer;
+    const filtro = contexto.createBiquadFilter();
+    filtro.type = 'bandpass';
+    filtro.Q.value = 1.2;
+    filtro.frequency.setValueAtTime(desde, t);
+    filtro.frequency.exponentialRampToValueAtTime(hasta, t + duracion);
+    const volumen = contexto.createGain();
+    volumen.gain.setValueAtTime(0.0001, t);
+    volumen.gain.exponentialRampToValueAtTime(fuerza, t + duracion * 0.25);
+    volumen.gain.exponentialRampToValueAtTime(0.0001, t + duracion);
+    ruido.connect(filtro).connect(volumen).connect(salida);
+    ruido.start(t);
+    ruido.stop(t + duracion);
+  }
+
+  const SONIDOS = {
+    // Marcar como hecha: burbuja que sube + dos notas de cristal (Sol y Do agudos)
+    hecha(t) {
+      burbuja(t, 420, 1400, 0.22, 0.5);
+      campanita(t + 0.07, 1568, 0.16, 0.55);
+      campanita(t + 0.14, 2093, 0.11, 0.5);
+    },
+    // Volver a pendiente: la burbuja al revés, bajando y más suave
+    pendiente(t) {
+      burbuja(t, 1250, 430, 0.24, 0.42);
+    },
+    // Quitar las hechas: soplido + cuatro burbujas que bajan en cascada
+    quitar(t) {
+      soplido(t, 0.45, 2600, 380, 0.3);
+      [880, 740, 620, 520].forEach((f, i) => burbuja(t + 0.05 + i * 0.07, f * 1.25, f, 0.14, 0.4 - i * 0.05));
+    },
+    // Eliminar una sola tarea: versión corta del anterior
+    eliminar(t) {
+      soplido(t, 0.28, 2200, 500, 0.22);
+      burbuja(t + 0.04, 900, 600, 0.14, 0.36);
+    },
+  };
+
+  function tocar(nombre) {
+    if (!activo || !SONIDOS[nombre]) return;
+    if (!preparar()) return;
+    try { SONIDOS[nombre](contexto.currentTime + 0.02); } catch { /* un sonido nunca debe romper la app */ }
+  }
+
+  function pintarInterruptor() {
+    const boton = $('#op-sonido');
+    boton.setAttribute('aria-checked', String(activo));
+    boton.querySelector('use').setAttribute('href', activo ? '#i-altavoz' : '#i-silencio');
+    $('#sonido-estado').textContent = activo ? 'Al marcar, desmarcar y quitar tareas' : 'Desactivados';
+  }
+
+  function alternarActivo() {
+    activo = !activo;
+    guardarPreferencia('sonido', activo);
+    pintarInterruptor();
+    if (activo) tocar('hecha');            // muestra cómo suena al activarlo
+  }
+
+  return { tocar, alternarActivo, pintarInterruptor };
+})();
+
 /* ============================== 2. Guardar en el teléfono ============================== */
 function tareaValida(t) {
   return Boolean(t) && typeof t === 'object'
@@ -319,6 +456,7 @@ function alternar(id) {
   t.hecha = !t.hecha;
   t.hechaEn = t.hecha ? Date.now() : null;
   guardar();
+  Sonido.tocar(t.hecha ? 'hecha' : 'pendiente');
   const li = filas.get(id);
   if (li) {
     pintarFila(li, t);
@@ -469,6 +607,7 @@ function eliminar(id) {
   guardar();
   render();
   vibrar(10);
+  Sonido.tocar('eliminar');
   Aviso.mostrar(`Eliminaste «${recortar(quitada.texto, 28)}»`, () => {
     tareas.splice(Math.min(indice, tareas.length), 0, quitada);
     guardar();
@@ -485,6 +624,8 @@ function quitarHechas() {
   if (!quitadas.length) { Aviso.mostrar('No hay tareas hechas para quitar.'); return; }
   guardar();
   render();
+  Sonido.tocar('quitar');
+  vibrar([10, 30, 10]);
   const n = quitadas.length;
   Aviso.mostrar(`Quitaste ${n} ${n === 1 ? 'tarea hecha' : 'tareas hechas'}`, () => {
     for (const [i, t] of quitadas) tareas.splice(Math.min(i, tareas.length), 0, t);
@@ -638,6 +779,7 @@ menu.addEventListener('click', e => { if (e.target === menu) cerrarMenu(); });  
 menu.addEventListener('cancel', e => { e.preventDefault(); cerrarMenu(); });     // botón atrás / Esc
 
 $('#op-limpiar').addEventListener('click', () => { cerrarMenu(); quitarHechas(); });
+$('#op-sonido').addEventListener('click', () => Sonido.alternarActivo());
 
 async function exportar() {
   const fecha = new Date().toISOString().slice(0, 10);
@@ -758,6 +900,7 @@ function crearBurbujas() {
 
 pintarFecha();
 crearBurbujas();
+Sonido.pintarInterruptor();
 cambiarFiltro(filtro, false);
 render({ animar: false });
 if (document.fonts) document.fonts.ready.then(moverMarcaFiltro);

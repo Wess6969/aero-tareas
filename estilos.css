@@ -399,6 +399,26 @@ h1 {
 .opcion span { display: grid; gap: 2px; }
 .opcion strong { font-weight: 600; }
 .opcion small { color: var(--texto-2); font-size: 0.84rem; }
+.opcion > span:not(.interruptor) { flex: 1; min-width: 0; }
+
+/* Interruptor de sonido: píldora de vidrio con una perla que se desliza */
+.interruptor {
+  position: relative; flex: none; width: 50px; height: 30px; border-radius: 999px;
+  border: 1px solid rgba(170, 230, 255, 0.4);
+  background: linear-gradient(180deg, rgba(0, 14, 28, 0.75), rgba(8, 38, 66, 0.6));
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55);
+  transition: background 0.25s, border-color 0.25s;
+}
+.interruptor::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 14%, #cfe6f5 40%, #7aa6c4 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s var(--curva-jalea), background 0.25s;
+}
+.opcion[aria-checked="true"] .interruptor { border-color: rgba(225, 255, 175, 0.8); background: linear-gradient(180deg, #8ee93a, #3fae14); }
+.opcion[aria-checked="true"] .interruptor::after { transform: translateX(20px); background: radial-gradient(circle at 35% 30%, #fff 0 14%, #eaffd0 45%, #a6ff3a 100%); }
+.opcion[aria-checked="false"] > svg { color: var(--texto-3); }
+
 .nota { margin: 6px 4px; color: var(--texto-2); font-size: 0.86rem; line-height: 1.4; }
 .nota-ios { padding: 10px 12px; border-radius: 14px; background: rgba(47, 230, 255, 0.1); border: 1px solid rgba(47, 230, 255, 0.35); color: var(--texto); }
 .boton-vidrio {

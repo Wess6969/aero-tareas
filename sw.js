@@ -2,7 +2,7 @@
 // Al publicar cambios, sube el número de VERSION para que los teléfonos descarguen la nueva.
 'use strict';
 
-const VERSION = 'aero-tareas-v2';
+const VERSION = 'aero-tareas-v3';
 const ARCHIVOS = [
   './',
   './index.html',

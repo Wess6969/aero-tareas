@@ -30,6 +30,8 @@
     <symbol id="i-instalar" viewBox="0 0 24 24"><path d="M8.2 2.8h7.6a1.7 1.7 0 0 1 1.7 1.7v15a1.7 1.7 0 0 1-1.7 1.7H8.2a1.7 1.7 0 0 1-1.7-1.7v-15a1.7 1.7 0 0 1 1.7-1.7zM12 8.6v6M9 11.6h6"/></symbol>
     <symbol id="i-guardar" viewBox="0 0 24 24"><path d="M12 15V4.5M7.5 9L12 4.5 16.5 9M5 14.5v4.5h14v-4.5"/></symbol>
     <symbol id="i-recuperar" viewBox="0 0 24 24"><path d="M12 4.5V15M7.5 10.5L12 15l4.5-4.5M5 14.5v4.5h14v-4.5"/></symbol>
+    <symbol id="i-altavoz" viewBox="0 0 24 24"><path d="M4 9.6h3.4L12 5.6v12.8l-4.6-4H4zM15.6 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/></symbol>
+    <symbol id="i-silencio" viewBox="0 0 24 24"><path d="M4 9.6h3.4L12 5.6v12.8l-4.6-4H4zM16 9.5l5 5M21 9.5l-5 5"/></symbol>
     <symbol id="i-limpiar" viewBox="0 0 24 24"><path d="M4.5 12.5l3.5 3.5 6.5-7.5M12.5 15.5l1.5 1.5 6.5-7.5"/></symbol>
   </svg>
 
@@ -125,6 +127,11 @@
         <span><strong>Instalar Aero Tareas</strong><small>Ícono en tu pantalla de inicio y abre sin el navegador</small></span>
       </button>
       <p class="nota nota-ios" id="nota-ios" hidden>Para instalarla en iPhone: toca <strong>Compartir</strong> y luego <strong>«Agregar a pantalla de inicio»</strong>.</p>
+      <button type="button" class="opcion" id="op-sonido" role="switch" aria-checked="true">
+        <svg aria-hidden="true"><use href="#i-altavoz"/></svg>
+        <span><strong>Sonidos</strong><small id="sonido-estado">Al marcar, desmarcar y quitar tareas</small></span>
+        <span class="interruptor" aria-hidden="true"></span>
+      </button>
       <button type="button" class="opcion" id="op-exportar">
         <svg aria-hidden="true"><use href="#i-guardar"/></svg>
         <span><strong>Guardar copia de seguridad</strong><small>Un archivo con todas tus tareas</small></span>
