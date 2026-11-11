@@ -134,6 +134,40 @@ h1 {
   color: #ffd9a8; font-size: 0.92rem; line-height: 1.4;
 }
 
+/* ------------------------------------------------------------ categorías (solo aparecen si creas alguna) */
+.categorias { margin: 0 -16px 14px; }
+.categorias-pista {
+  display: flex; gap: 8px; padding: 2px 16px 6px;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  scroll-padding-inline: 16px;
+  /* Desvanecido en los bordes: indica que se puede deslizar a los lados */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+.categorias-pista::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; display: inline-flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  border: 1px solid rgba(170, 230, 255, 0.26);
+  background: linear-gradient(180deg, rgba(160, 220, 255, 0.14), rgba(120, 190, 255, 0.05));
+  color: var(--texto); font-weight: 600; font-size: 0.92rem;
+  transition: transform 0.12s var(--curva), background 0.2s, border-color 0.2s;
+}
+.chip:active { transform: scale(0.96); }
+.chip .punto { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--c, #2fe6ff); box-shadow: 0 0 8px var(--c, #2fe6ff); }
+.chip .cuenta-chip { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(0, 18, 36, 0.5); color: var(--texto-2); font-size: 0.78rem; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+.chip .cuenta-chip:empty { display: none; }
+.chip svg { width: 15px; height: 15px; }
+.chip[aria-selected="true"] {
+  color: #032036; border-color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(180deg, #f0fcff 0%, #92e3ff 48%, #45bdf2 53%, #9becff 100%);
+  box-shadow: 0 4px 14px -4px rgba(47, 230, 255, 0.85), inset 0 1px 0 #fff;
+}
+.chip[aria-selected="true"] .punto { box-shadow: 0 0 0 2px rgba(3, 32, 54, 0.35); }
+.chip[aria-selected="true"] .cuenta-chip { background: rgba(3, 32, 54, 0.16); color: #032036; }
+.chip-nueva { border-style: dashed; border-color: rgba(47, 230, 255, 0.5); color: var(--cian); background: rgba(47, 230, 255, 0.06); padding: 0 14px 0 10px; }
+.chip-nueva svg { width: 18px; height: 18px; stroke-width: 2.4; }
+
 /* ------------------------------------------------------------ progreso y filtros */
 .resumen { display: grid; gap: 8px; margin-bottom: 14px; }
 .tubo {
@@ -271,7 +305,8 @@ h1 {
 
 /* Modo edición */
 .editor { height: 44px; padding: 0 14px; width: 100%; min-width: 0; grid-column: 3 / -1; }
-.barra-edicion { grid-column: 2 / -1; display: flex; gap: 8px; }
+.barra-edicion { grid-column: 2 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.barra-edicion.cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .boton-edicion {
   flex: 1; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border-radius: 999px; border: 1px solid rgba(170, 230, 255, 0.35); cursor: pointer;
@@ -420,6 +455,26 @@ h1 {
 .opcion[aria-checked="false"] > svg { color: var(--texto-3); }
 
 .nota { margin: 6px 4px; color: var(--texto-2); font-size: 0.86rem; line-height: 1.4; }
+
+/* Hojas de categoría y de mover */
+.etiqueta { margin: 2px 4px -2px; color: var(--texto-2); font-size: 0.88rem; font-weight: 600; }
+.hoja .campo { width: 100%; }
+.hoja .aviso-error { margin: 0 4px; padding: 0; }
+.acciones-hoja { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.acciones-hoja .boton-vidrio { margin-top: 0; }
+.boton-principal {
+  min-height: 48px; border-radius: 999px; cursor: pointer;
+  border: 1px solid rgba(225, 255, 175, 0.85);
+  color: #0b2a04; font-weight: 650;
+  background: linear-gradient(180deg, #d4ff8f 0%, #8ee93a 47%, #4dbb18 53%, #86ea47 100%);
+  box-shadow: 0 8px 20px -10px rgba(166, 255, 58, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.12s var(--curva);
+}
+.boton-principal:active { transform: scale(0.97); }
+.zona-borrar { display: grid; gap: 8px; margin-top: 6px; padding-top: 10px; border-top: 1px solid rgba(170, 230, 255, 0.16); }
+.opcion.peligro > svg { color: var(--coral); }
+.lista-destinos { display: grid; gap: 8px; }
+.destino .punto { flex: none; width: 12px; height: 12px; margin: 0 6px; border-radius: 50%; background: var(--c, #2fe6ff); box-shadow: 0 0 8px var(--c, #2fe6ff); }
 .nota-ios { padding: 10px 12px; border-radius: 14px; background: rgba(47, 230, 255, 0.1); border: 1px solid rgba(47, 230, 255, 0.35); color: var(--texto); }
 .boton-vidrio {
   min-height: 48px; margin-top: 4px; border-radius: 999px; cursor: pointer;
@@ -434,7 +489,8 @@ h1 {
   .tarea:hover { border-color: rgba(170, 230, 255, 0.32); }
   .redondo:hover, .opcion:hover { background-color: rgba(170, 230, 255, 0.12); }
   .marcar:hover .burbuja { transform: scale(1.08); box-shadow: inset 0 -3px 6px rgba(47, 140, 255, 0.35), 0 0 14px rgba(47, 230, 255, 0.5); }
-  .jalea:hover, .chip-instalar:hover { filter: brightness(1.06) saturate(1.1); }
+  .jalea:hover, .chip-instalar:hover, .boton-principal:hover { filter: brightness(1.06) saturate(1.1); }
+  .chip:not([aria-selected="true"]):hover { border-color: rgba(170, 230, 255, 0.5); background: linear-gradient(180deg, rgba(160, 220, 255, 0.2), rgba(120, 190, 255, 0.08)); }
   .filtro:hover { color: #fff; }
   .filtro[aria-pressed="true"]:hover { color: #032036; }
   .asa:hover { color: #dff6ff; }

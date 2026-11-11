@@ -171,22 +171,56 @@ const Sonido = (() => {
 })();
 
 /* ============================== 2. Guardar en el teléfono ============================== */
+const CLAVE_LISTAS = 'aeroTareas.listas';
+const LISTA_GENERAL = 'general';                  // «Mis tareas»: siempre existe, no se puede borrar
+const MAX_LISTAS = 20;
+const MAX_NOMBRE_LISTA = 30;
+const COLORES_LISTA = ['#2fe6ff', '#a6ff3a', '#ffd84a', '#ff9ad5', '#b69cff', '#ffa53a', '#5aa8ff', '#7dffd3'];
+const ID_VALIDO = /^[a-z0-9-]{1,40}$/i;
+
 function tareaValida(t) {
   return Boolean(t) && typeof t === 'object'
-    && typeof t.id === 'string' && /^[a-z0-9-]{1,40}$/i.test(t.id)
+    && typeof t.id === 'string' && ID_VALIDO.test(t.id)
     && typeof t.texto === 'string' && t.texto.trim().length > 0 && t.texto.length <= MAX_TEXTO
     && typeof t.hecha === 'boolean' && typeof t.importante === 'boolean'
-    && Number.isFinite(t.creada) && (t.hechaEn === null || Number.isFinite(t.hechaEn));
+    && Number.isFinite(t.creada) && (t.hechaEn === null || Number.isFinite(t.hechaEn))
+    && (t.lista === undefined || (typeof t.lista === 'string' && ID_VALIDO.test(t.lista)));
+}
+
+function listaValida(l) {
+  return Boolean(l) && typeof l === 'object'
+    && typeof l.id === 'string' && ID_VALIDO.test(l.id)
+    && typeof l.nombre === 'string' && l.nombre.trim().length > 0 && l.nombre.length <= MAX_NOMBRE_LISTA
+    && Number.isInteger(l.color) && l.color >= 0 && l.color < COLORES_LISTA.length;
+}
+
+function leerJSON(clave) {
+  const texto = localStorage.getItem(clave);      // puede fallar si el navegador bloquea el almacenamiento
+  return texto === null ? null : JSON.parse(texto);
+}
+
+// Categorías: si nunca creas ninguna, solo existe «Mis tareas» y la app se ve como una lista simple.
+function leerListas() {
+  let datos = [];
+  try {
+    const d = leerJSON(CLAVE_LISTAS);
+    if (Array.isArray(d)) datos = d;
+  } catch { /* sin almacenamiento: se avisa al leer las tareas */ }
+  const vistos = new Set();
+  const validas = datos.filter(l => listaValida(l) && !vistos.has(l.id) && vistos.add(l.id)).slice(0, MAX_LISTAS);
+  if (!validas.some(l => l.id === LISTA_GENERAL)) validas.unshift({ id: LISTA_GENERAL, nombre: 'Mis tareas', color: 0 });
+  return validas;
 }
 
 function leerTareas() {
   try {
-    const texto = localStorage.getItem(CLAVE);
-    if (texto === null) return [];
-    const datos = JSON.parse(texto);
+    const datos = leerJSON(CLAVE);
     if (!Array.isArray(datos)) return [];
     const vistos = new Set();
-    return datos.filter(t => tareaValida(t) && !vistos.has(t.id) && vistos.add(t.id));
+    const existentes = new Set(listas.map(l => l.id));
+    return datos
+      .filter(t => tareaValida(t) && !vistos.has(t.id) && vistos.add(t.id))
+      .map(t => (t.lista && existentes.has(t.lista) ? t : { ...t, lista: LISTA_GENERAL }));   // tareas de antes → «Mis tareas»
   } catch {
     $('#aviso-almacen').hidden = false;
     return [];
@@ -197,6 +231,7 @@ let persistenciaPedida = false;
 function guardar() {
   try {
     localStorage.setItem(CLAVE, JSON.stringify(tareas));
+    localStorage.setItem(CLAVE_LISTAS, JSON.stringify(listas));
     $('#aviso-almacen').hidden = true;
   } catch {
     $('#aviso-almacen').hidden = false;
@@ -209,23 +244,32 @@ function guardar() {
   }
 }
 
+let listas = leerListas();
 let tareas = leerTareas();
+let listaActual = leerPreferencia('lista', LISTA_GENERAL);
+if (!listas.some(l => l.id === listaActual)) listaActual = LISTA_GENERAL;
 let filtro = leerPreferencia('filtro', 'todas');
 if (!['todas', 'pendientes', 'hechas'].includes(filtro)) filtro = 'todas';
 
 // Si la app está abierta en dos pestañas, ambas se mantienen iguales.
 addEventListener('storage', e => {
-  if (e.key !== CLAVE) return;
+  if (e.key !== CLAVE && e.key !== CLAVE_LISTAS) return;
   cerrarEdicion(false);
+  listas = leerListas();
   tareas = leerTareas();
+  if (!listas.some(l => l.id === listaActual)) listaActual = LISTA_GENERAL;
   render({ animar: false });
 });
 
 function buscar(id) { return tareas.find(t => t.id === id); }
+function buscarLista(id) { return listas.find(l => l.id === id); }
+function hayCategorias() { return listas.length > 1; }
+function deListaActual() { return tareas.filter(t => t.lista === listaActual); }
 function visibles() {
-  if (filtro === 'pendientes') return tareas.filter(t => !t.hecha);
-  if (filtro === 'hechas') return tareas.filter(t => t.hecha);
-  return tareas.slice();
+  const propias = deListaActual();
+  if (filtro === 'pendientes') return propias.filter(t => !t.hecha);
+  if (filtro === 'hechas') return propias.filter(t => t.hecha);
+  return propias;
 }
 
 /* ============================== 3. Dibujo de la lista ============================== */
@@ -346,9 +390,56 @@ function render({ animar = true, desde = null, conVacio = true } = {}) {
   actualizarResumen(conVacio);
 }
 
+// Barra de categorías: solo aparece cuando creaste al menos una además de «Mis tareas».
+function pintarCategorias() {
+  const nav = $('#categorias');
+  const pista = $('#categorias-pista');
+  const actual = buscarLista(listaActual);
+  nav.hidden = !hayCategorias();
+  $('#texto-nueva').placeholder = hayCategorias() ? `Añadir a «${recortar(actual.nombre, 22)}»` : '¿Qué tienes que hacer?';
+  $('#limpiar-detalle').textContent = hayCategorias() ? 'Solo de la categoría que estás viendo' : 'Puedes deshacerlo justo después';
+  if (!hayCategorias()) { pista.replaceChildren(); return; }
+
+  const pendientes = new Map();
+  for (const t of tareas) if (!t.hecha) pendientes.set(t.lista, (pendientes.get(t.lista) || 0) + 1);
+  const chips = listas.map(l => {
+    const activa = l.id === listaActual;
+    const n = pendientes.get(l.id) || 0;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.dataset.lista = l.id;
+    chip.setAttribute('role', 'tab');
+    chip.setAttribute('aria-selected', String(activa));
+    chip.setAttribute('aria-label', `${l.nombre}, ${n} pendientes${activa ? '. Toca para renombrarla o eliminarla' : ''}`);
+    const punto = document.createElement('span');
+    punto.className = 'punto';
+    punto.style.setProperty('--c', COLORES_LISTA[l.color]);
+    const nombre = document.createElement('span');
+    nombre.textContent = l.nombre;
+    const cuenta = document.createElement('span');
+    cuenta.className = 'cuenta-chip';
+    cuenta.textContent = n ? String(n) : '';
+    chip.append(punto, nombre, cuenta);
+    if (activa) chip.append(icono('lapiz'));
+    return chip;
+  });
+  const nueva = document.createElement('button');
+  nueva.type = 'button';
+  nueva.className = 'chip chip-nueva';
+  nueva.dataset.nueva = 'si';
+  nueva.setAttribute('aria-label', 'Nueva categoría');
+  nueva.append(icono('mas'), document.createTextNode('Nueva'));
+  const desplazamiento = pista.scrollLeft;
+  pista.replaceChildren(...chips, nueva);
+  pista.scrollLeft = desplazamiento;
+}
+
 function actualizarResumen(conVacio = true) {
-  const total = tareas.length;
-  const hechas = tareas.filter(t => t.hecha).length;
+  pintarCategorias();
+  const propias = deListaActual();
+  const total = propias.length;
+  const hechas = propias.filter(t => t.hecha).length;
   const pendientes = total - hechas;
   const pct = total ? Math.round((hechas * 100) / total) : 0;
 
@@ -373,7 +464,10 @@ function pintarVacio(cantidadVisible, total) {
   if (cantidadVisible > 0) { vacio.hidden = true; return; }
   let titulo;
   let texto;
-  if (total === 0) {
+  if (total === 0 && hayCategorias()) {
+    titulo = `«${recortar(buscarLista(listaActual).nombre, 30)}» está vacía`;
+    texto = 'Escribe abajo lo que necesitas en esta categoría.';
+  } else if (total === 0) {
     titulo = 'Tu lista está vacía';
     texto = 'Escribe abajo lo que tienes que hacer y toca el botón verde.';
   } else if (filtro === 'pendientes') {
@@ -417,7 +511,7 @@ $('#form-nueva').addEventListener('submit', evento => {
 
   limpiarError();
   cerrarEdicion(true);
-  const nueva = { id: nuevoId(), texto, hecha: false, importante: false, creada: Date.now(), hechaEn: null };
+  const nueva = { id: nuevoId(), texto, hecha: false, importante: false, creada: Date.now(), hechaEn: null, lista: listaActual };
   tareas.push(nueva);
   guardar();
   campo.value = '';                       // el teclado sigue abierto para añadir otra
@@ -512,7 +606,11 @@ function editar(id) {
   botonBorrar.classList.add('peligro');
   const botonListo = botonEdicion('check', 'Listo', 'listo');
   botonListo.classList.add('principal');
-  barra.append(botonImportante, botonBorrar, botonListo);
+  const botones = [botonImportante];
+  if (hayCategorias()) botones.push(botonEdicion('mover', 'Mover', 'mover'));   // solo si hay a dónde moverla
+  botones.push(botonBorrar, botonListo);
+  barra.append(...botones);
+  barra.classList.toggle('cuatro', botones.length === 4);
 
   boton.hidden = true;
   li.querySelector('.marca-importante').hidden = true;
@@ -551,6 +649,9 @@ function editar(id) {
     } else if (b.dataset.edicion === 'eliminar') {
       cerrar(false);
       eliminar(t.id);
+    } else if (b.dataset.edicion === 'mover') {
+      cerrar(true);
+      abrirMover(t.id);
     } else {
       if (!limpiarTexto(campo.value)) { sacudir(campo); return; }
       cerrar(true);
@@ -618,10 +719,10 @@ function eliminar(id) {
 function quitarHechas() {
   const quitadas = [];
   tareas = tareas.filter((t, i) => {
-    if (t.hecha) { quitadas.push([i, t]); return false; }
+    if (t.hecha && t.lista === listaActual) { quitadas.push([i, t]); return false; }   // solo de la categoría que ves
     return true;
   });
-  if (!quitadas.length) { Aviso.mostrar('No hay tareas hechas para quitar.'); return; }
+  if (!quitadas.length) { Aviso.mostrar('No hay tareas hechas para quitar aquí.'); return; }
   guardar();
   render();
   Sonido.tocar('quitar');
@@ -760,31 +861,212 @@ lista.addEventListener('keydown', e => {
 });
 
 /* ============================== 5. Menú: instalar, copia de seguridad ============================== */
-const menu = $('#menu');
-
-function abrirMenu() {
+// Hojas que suben desde abajo (menú, categoría, mover): se abren y cierran igual.
+function abrirHoja(hoja) {
   cerrarEdicion(true);
-  menu.showModal();
-  if (conAnimacion()) menu.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: 340, easing: CURVA });
+  hoja.showModal();
+  if (conAnimacion()) hoja.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: 340, easing: CURVA });
 }
-function cerrarMenu() {
-  if (!menu.open) return;
-  if (!conAnimacion()) { menu.close(); return; }
-  menu.animate([{ transform: 'none' }, { transform: 'translateY(100%)' }], { duration: 220, easing: 'cubic-bezier(.4,0,1,1)' })
-    .onfinish = () => menu.close();
+function cerrarHoja(hoja) {
+  if (!hoja.open) return;
+  if (!conAnimacion()) { hoja.close(); return; }
+  hoja.animate([{ transform: 'none' }, { transform: 'translateY(100%)' }], { duration: 220, easing: 'cubic-bezier(.4,0,1,1)' })
+    .onfinish = () => hoja.close();
 }
+for (const hoja of document.querySelectorAll('dialog.hoja')) {
+  hoja.addEventListener('click', e => { if (e.target === hoja) cerrarHoja(hoja); });   // toque fuera de la hoja
+  hoja.addEventListener('cancel', e => { e.preventDefault(); cerrarHoja(hoja); });     // botón atrás / Esc
+}
+
+const menu = $('#menu');
+function abrirMenu() { abrirHoja(menu); }
+function cerrarMenu() { cerrarHoja(menu); }
 $('#boton-menu').addEventListener('click', abrirMenu);
 $('#cerrar-menu').addEventListener('click', cerrarMenu);
-menu.addEventListener('click', e => { if (e.target === menu) cerrarMenu(); });   // toque fuera de la hoja
-menu.addEventListener('cancel', e => { e.preventDefault(); cerrarMenu(); });     // botón atrás / Esc
 
 $('#op-limpiar').addEventListener('click', () => { cerrarMenu(); quitarHechas(); });
 $('#op-sonido').addEventListener('click', () => Sonido.alternarActivo());
+$('#op-categoria').addEventListener('click', () => abrirCategoria(null));
+
+/* Categorías: cambiar, crear, renombrar, eliminar */
+function cambiarLista(id, animar = true) {
+  if (!buscarLista(id)) id = LISTA_GENERAL;
+  const antes = listas.findIndex(l => l.id === listaActual);
+  cerrarEdicion(true);
+  listaActual = id;
+  guardarPreferencia('lista', id);
+  render({ animar: false });
+  const ahora = listas.findIndex(l => l.id === id);
+  if (animar && conAnimacion() && antes !== ahora) {
+    const lado = ahora > antes ? 1 : -1;     // la lista entra desde el lado de la pestaña elegida
+    lista.animate([{ opacity: 0, transform: `translateX(${lado * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: 300, easing: CURVA });
+  }
+  const chip = document.querySelector(`.chip[data-lista="${id}"]`);
+  if (chip) chip.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: conAnimacion() ? 'smooth' : 'auto' });
+}
+
+$('#categorias-pista').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  if (chip.dataset.nueva) { abrirCategoria(null); return; }
+  if (chip.dataset.lista === listaActual) { abrirCategoria(listaActual); return; }   // tocar la activa = editarla
+  vibrar(6);
+  cambiarLista(chip.dataset.lista);
+});
+
+const hojaCategoria = $('#hoja-categoria');
+let categoriaEditando = null;          // null = crear una nueva
+
+function plural(n, uno, varios) { return `${n} ${n === 1 ? uno : varios}`; }
+
+function abrirCategoria(id) {
+  const l = id ? buscarLista(id) : null;
+  if (!l && listas.length >= MAX_LISTAS) { cerrarMenu(); Aviso.mostrar(`Puedes tener hasta ${MAX_LISTAS} categorías.`); return; }
+  categoriaEditando = l ? l.id : null;
+  $('#titulo-categoria').textContent = l ? 'Editar categoría' : 'Nueva categoría';
+  $('#guardar-categoria').textContent = l ? 'Guardar' : 'Crear';
+  const campo = $('#nombre-categoria');
+  campo.value = l ? l.nombre : '';
+  campo.removeAttribute('aria-invalid');
+  $('#error-categoria').textContent = '';
+
+  const sePuedeBorrar = Boolean(l) && l.id !== LISTA_GENERAL;
+  $('#zona-borrar').hidden = !sePuedeBorrar;
+  if (sePuedeBorrar) {
+    const n = tareas.filter(t => t.lista === l.id).length;
+    $('#borrar-nota').textContent = n ? `«${l.nombre}» tiene ${plural(n, 'tarea', 'tareas')}.` : `«${l.nombre}» está vacía.`;
+    $('#borrar-mover').hidden = n === 0;
+    $('#borrar-mover-detalle').textContent = `${n === 1 ? 'Su tarea pasa' : `Sus ${n} tareas pasan`} a «${buscarLista(LISTA_GENERAL).nombre}»`;
+    $('#borrar-todo-titulo').textContent = n ? `Eliminar junto con ${n === 1 ? 'su tarea' : `sus ${n} tareas`}` : 'Eliminar categoría';
+  }
+  if (menu.open) menu.close();
+  abrirHoja(hojaCategoria);
+}
+
+$('#nombre-categoria').addEventListener('input', () => {
+  $('#error-categoria').textContent = '';
+  $('#nombre-categoria').removeAttribute('aria-invalid');
+});
+$('#cancelar-categoria').addEventListener('click', () => cerrarHoja(hojaCategoria));
+
+$('#form-categoria').addEventListener('submit', e => {
+  e.preventDefault();
+  const campo = $('#nombre-categoria');
+  const nombre = limpiarTexto(campo.value);
+  const error = mensaje => {
+    $('#error-categoria').textContent = mensaje;
+    campo.setAttribute('aria-invalid', 'true');
+    sacudir(campo);
+    vibrar([12, 40, 12]);
+  };
+  if (!nombre) return error('Escribe un nombre para la categoría.');
+  if (nombre.length > MAX_NOMBRE_LISTA) return error(`El nombre puede tener hasta ${MAX_NOMBRE_LISTA} caracteres.`);
+  const minusculas = nombre.toLocaleLowerCase('es');
+  if (listas.some(l => l.id !== categoriaEditando && l.nombre.toLocaleLowerCase('es') === minusculas)) {
+    return error('Ya tienes una categoría con ese nombre.');
+  }
+
+  if (categoriaEditando) {
+    buscarLista(categoriaEditando).nombre = nombre;
+    guardar();
+    cerrarHoja(hojaCategoria);
+    render({ animar: false });
+    Aviso.mostrar(`Ahora se llama «${recortar(nombre, 24)}»`);
+    return;
+  }
+  const usados = new Set(listas.map(l => l.color));
+  let color = COLORES_LISTA.findIndex((_, i) => !usados.has(i));
+  if (color < 0) color = listas.length % COLORES_LISTA.length;
+  const nueva = { id: nuevoId(), nombre, color };
+  listas.push(nueva);
+  guardar();
+  cerrarHoja(hojaCategoria);
+  cambiarLista(nueva.id);
+  vibrar(10);
+  Aviso.mostrar(`Categoría «${recortar(nombre, 22)}» creada`);
+});
+
+function eliminarCategoria(conservarTareas) {
+  const l = buscarLista(categoriaEditando);
+  if (!l || l.id === LISTA_GENERAL) return;
+  const respaldo = JSON.stringify({ listas, tareas, listaActual });
+  const n = tareas.filter(t => t.lista === l.id).length;
+  if (conservarTareas) {
+    for (const t of tareas) if (t.lista === l.id) t.lista = LISTA_GENERAL;
+  } else {
+    tareas = tareas.filter(t => t.lista !== l.id);
+  }
+  listas = listas.filter(x => x.id !== l.id);
+  guardar();
+  cerrarHoja(hojaCategoria);
+  cambiarLista(LISTA_GENERAL);
+  Sonido.tocar(!conservarTareas && n ? 'quitar' : 'eliminar');
+  vibrar(10);
+  Aviso.mostrar(`Eliminaste «${recortar(l.nombre, 20)}»`, () => {
+    const r = JSON.parse(respaldo);
+    listas = r.listas;
+    tareas = r.tareas;
+    guardar();
+    cambiarLista(r.listaActual, false);
+  });
+}
+$('#borrar-mover').addEventListener('click', () => eliminarCategoria(true));
+$('#borrar-todo').addEventListener('click', () => eliminarCategoria(false));
+
+/* Mover una tarea a otra categoría (desde la barra de edición) */
+const hojaMover = $('#hoja-mover');
+let tareaMoviendo = null;
+
+function abrirMover(id) {
+  const t = buscar(id);
+  if (!t) return;
+  tareaMoviendo = id;
+  $('#mover-tarea').textContent = `«${recortar(t.texto, 70)}»`;
+  const destinos = listas.filter(l => l.id !== t.lista).map(l => {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'opcion destino';
+    boton.dataset.lista = l.id;
+    const punto = document.createElement('span');
+    punto.className = 'punto';
+    punto.style.setProperty('--c', COLORES_LISTA[l.color]);
+    const textos = document.createElement('span');
+    const nombre = document.createElement('strong');
+    nombre.textContent = l.nombre;
+    const detalle = document.createElement('small');
+    const n = tareas.filter(x => x.lista === l.id && !x.hecha).length;
+    detalle.textContent = n ? plural(n, 'pendiente', 'pendientes') : 'Sin pendientes';
+    textos.append(nombre, detalle);
+    boton.append(punto, textos);
+    return boton;
+  });
+  $('#lista-destinos').replaceChildren(...destinos);
+  abrirHoja(hojaMover);
+}
+
+$('#lista-destinos').addEventListener('click', e => {
+  const boton = e.target.closest('.destino');
+  const t = buscar(tareaMoviendo);
+  const destino = boton && buscarLista(boton.dataset.lista);
+  if (!t || !destino) return;
+  const origen = t.lista;
+  t.lista = destino.id;
+  guardar();
+  cerrarHoja(hojaMover);
+  render();
+  vibrar(10);
+  Aviso.mostrar(`Movida a «${recortar(destino.nombre, 22)}»`, () => {
+    t.lista = origen;
+    guardar();
+    render();
+  });
+});
+$('#cancelar-mover').addEventListener('click', () => cerrarHoja(hojaMover));
 
 async function exportar() {
   const fecha = new Date().toISOString().slice(0, 10);
   const nombre = `aero-tareas-${fecha}.json`;
-  const contenido = JSON.stringify({ app: 'aero-tareas', version: 1, exportado: new Date().toISOString(), tareas }, null, 2);
+  const contenido = JSON.stringify({ app: 'aero-tareas', version: 2, exportado: new Date().toISOString(), listas, tareas }, null, 2);
   const archivo = new File([contenido], nombre, { type: 'application/json' });
   // En el celular se abre el menú de compartir (Drive, WhatsApp, correo…). Si no se puede, se descarga.
   if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
@@ -824,6 +1106,19 @@ entradaArchivo.addEventListener('change', async () => {
   const recibidas = Array.isArray(datos) ? datos : (datos && Array.isArray(datos.tareas) ? datos.tareas : null);
   if (!recibidas) { Aviso.mostrar('Ese archivo no es una copia de Aero Tareas.'); return; }
 
+  // Categorías de la copia (solo existen en copias nuevas): se suman las que no tengas.
+  const listasNuevas = [];
+  const destinoDe = new Map();                // id de categoría en la copia → id donde quedará
+  const recibidasListas = datos && Array.isArray(datos.listas) ? datos.listas.filter(listaValida) : [];
+  for (const l of recibidasListas) {
+    if (l.id === LISTA_GENERAL || buscarLista(l.id)) { destinoDe.set(l.id, l.id); continue; }
+    if (listas.length + listasNuevas.length >= MAX_LISTAS) { destinoDe.set(l.id, LISTA_GENERAL); continue; }
+    const usados = new Set([...listas, ...listasNuevas].map(x => x.nombre.toLocaleLowerCase('es')));
+    const nombre = usados.has(l.nombre.toLocaleLowerCase('es')) ? `${recortar(l.nombre, 26)} (2)` : l.nombre;
+    listasNuevas.push({ id: l.id, nombre, color: l.color });
+    destinoDe.set(l.id, l.id);
+  }
+
   const existentes = new Set(tareas.map(t => t.id));
   const nuevas = [];
   let repetidas = 0;
@@ -832,22 +1127,29 @@ entradaArchivo.addEventListener('change', async () => {
     if (existentes.has(t.id)) { repetidas++; continue; }
     if (tareas.length + nuevas.length >= MAX_TAREAS) break;
     existentes.add(t.id);
-    nuevas.push({ id: t.id, texto: limpiarTexto(t.texto), hecha: t.hecha, importante: t.importante, creada: t.creada, hechaEn: t.hechaEn });
+    nuevas.push({ id: t.id, texto: limpiarTexto(t.texto), hecha: t.hecha, importante: t.importante, creada: t.creada, hechaEn: t.hechaEn,
+      lista: destinoDe.get(t.lista) || LISTA_GENERAL });
   }
-  if (!nuevas.length) {
-    Aviso.mostrar(repetidas ? 'Todas las tareas de esa copia ya estaban en tu lista.' : 'Esa copia no tiene tareas válidas.');
+  if (!nuevas.length && !listasNuevas.length) {
+    Aviso.mostrar(repetidas ? 'Todo lo de esa copia ya estaba en tu lista.' : 'Esa copia no tiene tareas válidas.');
     return;
   }
+  listas.push(...listasNuevas);
   tareas.push(...nuevas);
   guardar();
   if (filtro !== 'todas') cambiarFiltro('todas', false);
   render();
-  const n = nuevas.length;
-  Aviso.mostrar(`Recuperaste ${n} ${n === 1 ? 'tarea' : 'tareas'}${repetidas ? ` (${repetidas} ya estaban)` : ''}`, () => {
-    const ids = new Set(nuevas.map(t => t.id));
-    tareas = tareas.filter(t => !ids.has(t.id));
+  const partes = [];
+  if (nuevas.length) partes.push(plural(nuevas.length, 'tarea', 'tareas'));
+  if (listasNuevas.length) partes.push(plural(listasNuevas.length, 'categoría', 'categorías'));
+  Aviso.mostrar(`Recuperaste ${partes.join(' y ')}${repetidas ? ` (${repetidas} ya estaban)` : ''}`, () => {
+    const idsTareas = new Set(nuevas.map(t => t.id));
+    const idsListas = new Set(listasNuevas.map(l => l.id));
+    tareas = tareas.filter(t => !idsTareas.has(t.id));
+    listas = listas.filter(l => !idsListas.has(l.id));
+    if (!buscarLista(listaActual)) listaActual = LISTA_GENERAL;
     guardar();
-    render();
+    render({ animar: false });
   });
 });
 

@@ -30,6 +30,9 @@
     <symbol id="i-instalar" viewBox="0 0 24 24"><path d="M8.2 2.8h7.6a1.7 1.7 0 0 1 1.7 1.7v15a1.7 1.7 0 0 1-1.7 1.7H8.2a1.7 1.7 0 0 1-1.7-1.7v-15a1.7 1.7 0 0 1 1.7-1.7zM12 8.6v6M9 11.6h6"/></symbol>
     <symbol id="i-guardar" viewBox="0 0 24 24"><path d="M12 15V4.5M7.5 9L12 4.5 16.5 9M5 14.5v4.5h14v-4.5"/></symbol>
     <symbol id="i-recuperar" viewBox="0 0 24 24"><path d="M12 4.5V15M7.5 10.5L12 15l4.5-4.5M5 14.5v4.5h14v-4.5"/></symbol>
+    <symbol id="i-carpeta" viewBox="0 0 24 24"><path d="M3.5 7.2V18a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.3A1.5 1.5 0 0 0 19 7.8h-7.2L9.9 5.5H5a1.5 1.5 0 0 0-1.5 1.7zM12 11v5.5M9.25 13.75h5.5"/></symbol>
+    <symbol id="i-lapiz" viewBox="0 0 24 24"><path d="M4.5 19.5h3.8L19 8.8a2.2 2.2 0 0 0-3.1-3.1L5.2 16.4zM14.6 7l3.1 3.1"/></symbol>
+    <symbol id="i-mover" viewBox="0 0 24 24"><path d="M3.5 7.2V18a1.5 1.5 0 0 0 1.5 1.5h14a1.5 1.5 0 0 0 1.5-1.5V9.3A1.5 1.5 0 0 0 19 7.8h-7.2L9.9 5.5H5a1.5 1.5 0 0 0-1.5 1.7zM8.5 13.5h7M12.8 10.8l2.7 2.7-2.7 2.7"/></symbol>
     <symbol id="i-altavoz" viewBox="0 0 24 24"><path d="M4 9.6h3.4L12 5.6v12.8l-4.6-4H4zM15.6 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.6 7.6 0 0 1 0 10.8"/></symbol>
     <symbol id="i-silencio" viewBox="0 0 24 24"><path d="M4 9.6h3.4L12 5.6v12.8l-4.6-4H4zM16 9.5l5 5M21 9.5l-5 5"/></symbol>
     <symbol id="i-limpiar" viewBox="0 0 24 24"><path d="M4.5 12.5l3.5 3.5 6.5-7.5M12.5 15.5l1.5 1.5 6.5-7.5"/></symbol>
@@ -60,6 +63,10 @@
       <p><strong>Instálala como app</strong><span>Ícono en tu inicio y funciona sin internet</span></p>
       <button type="button" class="chip-instalar" id="chip-instalar">Instalar</button>
     </div>
+
+    <nav class="categorias" id="categorias" aria-label="Categorías" hidden>
+      <div class="categorias-pista" id="categorias-pista" role="tablist"></div>
+    </nav>
 
     <p class="aviso-almacen" id="aviso-almacen" role="alert" hidden>
       Este navegador no deja guardar datos (¿modo incógnito?). Tus tareas se perderán al cerrar. Abre la app en una ventana normal.
@@ -127,6 +134,10 @@
         <span><strong>Instalar Aero Tareas</strong><small>Ícono en tu pantalla de inicio y abre sin el navegador</small></span>
       </button>
       <p class="nota nota-ios" id="nota-ios" hidden>Para instalarla en iPhone: toca <strong>Compartir</strong> y luego <strong>«Agregar a pantalla de inicio»</strong>.</p>
+      <button type="button" class="opcion" id="op-categoria">
+        <svg aria-hidden="true"><use href="#i-carpeta"/></svg>
+        <span><strong>Nueva categoría</strong><small>Separa tus tareas en listas: súper, trabajo…</small></span>
+      </button>
       <button type="button" class="opcion" id="op-sonido" role="switch" aria-checked="true">
         <svg aria-hidden="true"><use href="#i-altavoz"/></svg>
         <span><strong>Sonidos</strong><small id="sonido-estado">Al marcar, desmarcar y quitar tareas</small></span>
@@ -143,10 +154,46 @@
       <input type="file" id="archivo-importar" accept="application/json,.json" hidden>
       <button type="button" class="opcion" id="op-limpiar">
         <svg aria-hidden="true"><use href="#i-limpiar"/></svg>
-        <span><strong>Quitar tareas hechas</strong><small>Puedes deshacerlo justo después</small></span>
+        <span><strong>Quitar tareas hechas</strong><small id="limpiar-detalle">Puedes deshacerlo justo después</small></span>
       </button>
       <p class="nota">Tus tareas se guardan solo en este dispositivo. Haz una copia de vez en cuando.</p>
       <button type="button" class="boton-vidrio" id="cerrar-menu">Cerrar</button>
+    </div>
+  </dialog>
+
+  <dialog class="hoja" id="hoja-categoria" aria-labelledby="titulo-categoria">
+    <form class="hoja-contenido" id="form-categoria" novalidate>
+      <span class="hoja-asa" aria-hidden="true"></span>
+      <h2 id="titulo-categoria">Nueva categoría</h2>
+      <label for="nombre-categoria" class="etiqueta">Nombre</label>
+      <input id="nombre-categoria" class="campo" type="text" maxlength="30" placeholder="Por ejemplo: Súper del día"
+        enterkeyhint="done" autocapitalize="sentences" autocomplete="off" aria-describedby="error-categoria">
+      <p class="aviso-error" id="error-categoria" role="alert"></p>
+      <div class="acciones-hoja">
+        <button type="button" class="boton-vidrio" id="cancelar-categoria">Cancelar</button>
+        <button type="submit" class="boton-principal" id="guardar-categoria">Crear</button>
+      </div>
+      <div class="zona-borrar" id="zona-borrar" hidden>
+        <p class="nota" id="borrar-nota"></p>
+        <button type="button" class="opcion peligro" id="borrar-mover" hidden>
+          <svg aria-hidden="true"><use href="#i-mover"/></svg>
+          <span><strong>Eliminar y conservar sus tareas</strong><small id="borrar-mover-detalle"></small></span>
+        </button>
+        <button type="button" class="opcion peligro" id="borrar-todo">
+          <svg aria-hidden="true"><use href="#i-papelera"/></svg>
+          <span><strong id="borrar-todo-titulo">Eliminar categoría</strong><small>Puedes deshacerlo justo después</small></span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="hoja" id="hoja-mover" aria-labelledby="titulo-mover">
+    <div class="hoja-contenido">
+      <span class="hoja-asa" aria-hidden="true"></span>
+      <h2 id="titulo-mover">Mover a…</h2>
+      <p class="nota" id="mover-tarea"></p>
+      <div class="lista-destinos" id="lista-destinos"></div>
+      <button type="button" class="boton-vidrio" id="cancelar-mover">Cancelar</button>
     </div>
   </dialog>
 
